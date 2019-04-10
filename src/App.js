@@ -1,28 +1,74 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import connectToStores from 'alt-utils/lib/connectToStores';
+import './_app.css';
+
+import AiStore from './store/stores/AiStore';
+import PlayerStore from './store/stores/PlayerStore';
+
+import AiActions from './store/actions/AiActions';
+import PlayerActions from './store/actions/PlayerActions';
 
 class App extends Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Learn React
-          </a>
-        </header>
-      </div>
-    );
-  }
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            number: 0
+        }
+    }
+
+    static getStores() {
+        return [PlayerStore, AiStore];
+    }
+
+    static getPropsFromStores() {
+        return {player: PlayerStore.getState(), ai: AiStore.getState()};
+    }
+
+    componentDidMount() {
+        AiActions.initGame();
+    }
+
+    handleInputChange = (event) => {
+        const target = event.target;
+        const value = target.type === 'checkbox' ? target.checked : target.value;
+        const name = target.name;
+
+        this.setState({
+            [name]: value
+        });
+    }
+
+    onSubmit = (e) => {
+        e.preventDefault();
+        PlayerActions.guessNumber(this.state.number);
+        AiActions.evalGuess(this.state.number);
+    }
+
+    render() {
+
+        const history = this.props.player.history.map((item, index) => <li key={index}>{item.guessedNumber}</li>);
+        const disabled = this.props.ai.gameIsWon;
+
+        return (
+            <div className="App">
+                <h1>FLUX</h1>
+                <p>Latest guess: {this.props.player.guessedNumber}</p>
+                <form onSubmit={this.onSubmit}>
+                    <input type="text" name="number" value={this.state.number} onChange={this.handleInputChange} />
+                    <button type="submit" disabled={disabled}>Guess</button>
+                </form>
+                <p>{this.props.ai.message}</p>
+                <div>
+                    <ul>
+                        {history}
+                    </ul>
+                </div>
+            </div>
+        );
+    }
 }
 
-export default App;
+
+export default connectToStores(App);
